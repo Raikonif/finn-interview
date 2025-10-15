@@ -1,0 +1,106 @@
+services:
+  # ============================================
+  # Backend (Spring Boot)
+  # ============================================
+  backend:
+    build:
+      context: ./finn-back
+      dockerfile: Dockerfile
+    container_name: backend_app
+    restart: always
+    environment:
+      # IMPORTANTE: Estas variables vienen del UserData script
+      # que las obtiene de RDS y Secrets Manager
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST:-postgres}:5432/${POSTGRES_DB:-app}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-admin}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      # MongoDB puede ser Atlas o self-hosted
+      SPRING_DATA_MONGODB_URI: ${MONGO_URI:-mongodb://admin:admin@mongodb:27017/app?authSource=admin}
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: ${ENVIRONMENT:-production}
+    ports:
+      - "8080:8080"
+    networks:
+      - app-net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # ============================================
+  # Frontend (React con Nginx)
+  # ============================================
+  frontend:
+    build:
+      context: ./finn-front
+      dockerfile: Dockerfile
+      args:
+        # En AWS, el backend está en el mismo host
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://backend:8080}
+    container_name: frontend_app
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    networks:
+      - app-net
+
+  # ============================================
+  # MongoDB Self-Hosted (SOLO para desarrollo local)
+  # En AWS, esto se comentará automáticamente si usas Atlas
+  # ============================================
+  mongodb:
+    image: mongo:7
+    container_name: mongo_db
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-admin}
+      MONGO_INITDB_DATABASE: app
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-net
+    # Solo se usa en desarrollo local
+    profiles:
+      - local
+
+  # ============================================
+  # PostgreSQL Local (SOLO para desarrollo)
+  # En AWS usamos RDS, no este contenedor
+  # ============================================
+  postgres:
+    image: postgres:16
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-net
+    # Solo se usa en desarrollo local
+    profiles:
+      - local
+
+volumes:
+  postgres_data:
+  mongo_data:
+
+networks:
+  app-net:
+    driver: bridge
