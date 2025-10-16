@@ -168,7 +168,7 @@ See `.env.example` for the full list.
 
 ## 📚 Documentation
 
-- **[ESPECIFICATIONS.md](README.md)** — Requirements, architecture, persistence strategy, theoretical Q&A
+- **[ESPECIFICATIONS.md](ASSESSMENTS.md)** — Requirements, architecture, persistence strategy, theoretical Q&A
 - **[finn-front/SSR_IMPLEMENTATION.md](finn-front/SSR_IMPLEMENTATION.md)** — SSR with React Router/Vite
 - **[finn-back/API_USAGE.md](finn-back/API_USAGE.md)** — Backend API endpoints
 
