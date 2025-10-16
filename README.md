@@ -1,6 +1,3 @@
-# Start the containers in detached mode
-docker compose up -d
-
 # Start the containers in detached mode with build (Local profile)
 docker compose --profile local up -d --build
 
@@ -18,8 +15,8 @@ docker compose down -v
 
 
 # Postgres from host
-psql -h localhost -U myuser -d mydatabase
+psql -h localhost -U admin -d app
 
 # Mongo from host
-mongo --host localhost -u myuser -p mypassword --authenticationDatabase admin
+mongo --host localhost -u admin -p admin --authenticationDatabase app
 
