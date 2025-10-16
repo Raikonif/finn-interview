@@ -15,6 +15,7 @@ Parameters:
   MongoDBAtlasConnectionString:
     Type: String
     Description: Connection string de MongoDB Atlas (opcional, dejar vacio para usar EC2)
+    NoEcho: true
     Default: ""
     
   GitHubRepoURL:
@@ -29,6 +30,12 @@ Parameters:
       - staging
       - production
     Description: Ambiente de despliegue
+
+  JWTSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+    Description: Clave secreta JWT para firma de tokens (mínimo 32 caracteres)
 
 Conditions:
   UseMongoDBAtlas: !Not [!Equals [!Ref MongoDBAtlasConnectionString, ""]]
@@ -576,7 +583,11 @@ Resources:
             POSTGRES_DB=app
             MONGO_URI=${MongoDBAtlasConnectionString}
             ENVIRONMENT=${Environment}
+            JWT_SECRET=${JWTSecret}
             EOF
+            
+            # Restringir permisos del archivo .env
+            chmod 600 .env
             
             # Configurar docker-compose para no usar MongoDB si hay Atlas
             if [ -n "${MongoDBAtlasConnectionString}" ]; then
